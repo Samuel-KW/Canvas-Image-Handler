@@ -28,7 +28,13 @@ class CanvasHandler {
         this.c = document.createElement('canvas');
         this.ctx = this.c.getContext('2d');
 
-        this.images = [];
+        this.listeners = {
+            move: [],
+            down: [],
+            up: []
+        };
+
+        this.objects = [];
 
         parent.appendChild(this.c);
 
@@ -36,6 +42,24 @@ class CanvasHandler {
     }
 
     setup_listeners() {
+
+        const events = [ 'move', 'down', 'up' ];
+
+        for (const type of events) {
+
+            window.addEventListener('mouse' + type, event => {
+
+                let objects = [];
+
+                for (const object of this.objects) {
+
+                    if (object.contains(event.x, event.y))
+                        objects.push(object);
+                }
+
+                this.listeners[type].forEach(fn => fn(objects, event));
+            });
+        }
 
         window.addEventListener('resize', () => this.handle_resize());
 
@@ -47,6 +71,15 @@ class CanvasHandler {
 
         this.handle_resize();
 
+    }
+
+    addEventListener (type, listener) {
+        switch (type) {
+            case 'move':
+            case 'mousemove': this.listeners.move.push(listener); break;
+            case 'mousedown': this.listeners.down.push(listener); break;
+            case 'mouseup': this.listeners.up.push(listener); break;
+        }
     }
 
     handle_paste(e) {
@@ -112,7 +145,7 @@ class CanvasHandler {
         };
 
         image.src = source;
-        this.images.push(object);
+        this.objects.push(object);
 
         return image;
     }
@@ -123,9 +156,9 @@ class CanvasHandler {
 
         ctx.clearRect(0, 0, c.width, c.height);
 
-        for (let i = 0; i < this.images.length; ++i) {
-            const img = this.images[i];
-            img.draw(ctx);
+        for (let i = 0; i < this.objects.length; ++i) {
+            const obj = this.objects[i];
+            obj.draw(ctx);
         }
     }
 
@@ -135,6 +168,18 @@ class CanvasHandler {
 }
 
 const Session = new CanvasHandler(document.body, 4, 3);
+
+Session.addEventListener('mousedown', function (objects, e) {
+
+    const object = objects[objects.length - 1];
+    if (!object) return;
+
+    object.x = e.x;
+    object.y = e.y;
+
+    Session.draw();
+});
+
 
 ({
     "type": "DRAW_MODE_ROUND",
