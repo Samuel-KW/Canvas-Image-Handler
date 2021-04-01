@@ -36,6 +36,8 @@ class CanvasHandler {
 
         this.objects = [];
 
+        this.dragging = false;
+
         parent.appendChild(this.c);
 
         this.setup_listeners();
@@ -60,6 +62,34 @@ class CanvasHandler {
                 this.listeners[type].forEach(fn => fn(objects, event));
             });
         }
+
+        this.addEventListener('mousedown', objects => {
+
+            const object = objects[objects.length - 1];
+            if (!object) return;
+
+            const index = this.objects.indexOf(object);
+            const last = this.objects.length - 1;
+            
+            [this.objects[last], this.objects[index]] = [this.objects[index], this.objects[last]];
+            this.dragging = true;
+        });
+
+        window.addEventListener('mouseup', () => {
+            this.dragging = false;
+        });
+
+        window.addEventListener('mousemove', e => {
+
+            const object = this.objects[this.objects.length - 1];
+            if (!object || !this.dragging) return;
+        
+            object.x = e.x;
+            object.y = e.y;
+        
+            this.draw();
+        });
+
 
         window.addEventListener('resize', () => this.handle_resize());
 
@@ -168,17 +198,6 @@ class CanvasHandler {
 }
 
 const Session = new CanvasHandler(document.body, 4, 3);
-
-Session.addEventListener('mousedown', function (objects, e) {
-
-    const object = objects[objects.length - 1];
-    if (!object) return;
-
-    object.x = e.x;
-    object.y = e.y;
-
-    Session.draw();
-});
 
 
 ({
